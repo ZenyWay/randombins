@@ -17,10 +17,12 @@ import toCombination$ from 'ordered-char-combinations'
 import getRandomWords from 'randomwords'
 import { Stream, from as toStream, fromPromise, throwError } from 'most'
 
+export type Streamable<T> = T[]|Iterable<T>|Stream<T>
+
 export default function (opts?: Partial<RandomBinsFactorySpec>): RandomBins {
   const spec = getRandomBinsSpec(opts)
 
-  return function (alphabets: string[]|Stream<string>): Stream<string> {
+  return function (alphabets: Streamable<string>): Stream<string> {
     const combination$ = spec.toCombination$(alphabets)
 
     return fromPromise(calculateCombinationsLength(alphabets))
@@ -30,12 +32,12 @@ export default function (opts?: Partial<RandomBinsFactorySpec>): RandomBins {
 
 export interface RandomBinsFactorySpec {
   size: number
-  toCombination$: (alphabets: string[]|Stream<string>) => Stream<string>
+  toCombination$: (alphabets: Streamable<string>) => Stream<string>
   randomwords: (length: number) => Uint16Array
 }
 
 export interface RandomBins {
-  (alphabets: string[]|Stream<string>): Stream<string>
+  (alphabets: Streamable<string>): Stream<string>
 }
 
 function getRandomBinsSpec (opts?: Partial<RandomBinsFactorySpec>): RandomBinsFactorySpec {
@@ -46,9 +48,15 @@ function getRandomBinsSpec (opts?: Partial<RandomBinsFactorySpec>): RandomBinsFa
   }
 }
 
-function calculateCombinationsLength (strings: string[]|Stream<string>): Promise<number> {
+interface fromStreamable {
+  <T>(v: Streamable<T>): Stream<T>
+}
+
+function calculateCombinationsLength (strings: string[]|Iterable<string>|Stream<string>): Promise<number> {
   try {
-    return toStream<string>(strings)
+    // override type definition of most#from to accept Array and Stream in addition to Iterable
+    // (limitation in type definition of most-2.1.2)
+    return (<fromStreamable>toStream)(strings)
     .map(str => assert(isString(str), 'invalid argument') && str.length)
     .reduce(product, 1)
   } catch (err) {
