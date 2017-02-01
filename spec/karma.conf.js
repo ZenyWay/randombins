@@ -44,6 +44,7 @@ module.exports = function (config) {
         flags: [ '--no-sandbox' ]
       }
     },
+    browserNoActivityTimeout: 30000, // ms
     autoWatch: true,
     singleRun: true,
     plugins: [
