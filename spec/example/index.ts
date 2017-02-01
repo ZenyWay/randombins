@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Stephane M. Catala
+ * Copyright 2017 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@ import getRandomBins from '../../src'
 const randombins = getRandomBins({ size: 8 }) // default length is 256 bins
 
 import debug = require('debug')
-const log = debug('randombins')
+debug.enable('randombins:*')
 
 const alphabets = [ '0123', 'abcd', 'ABCD' ] // 4*4*4 = 64 combinations
 
 randombins(alphabets)
-.then(log) // the first combination from the given alphabets,
-// together with 7 other randomly selected combinations, in random order
-// e.g. [ "3bA", "1cA", "0bA", "0dD", "2aA", "3dC", "0aA", "2cA" ]
+.forEach(debug('randombins:')) // e.g. 0aA, 0aC, 1aA, 1cB, 2bA, 2bD, 3aA, 3dA
+.catch(debug('randombins:error:'))

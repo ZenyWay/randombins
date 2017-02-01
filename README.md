@@ -12,17 +12,16 @@ import getRandomBins from 'randombins'
 const randombins = getRandomBins({ size: 8 }) // default length is 256 bins
 
 import debug = require('debug')
-const log = debug('randombins')
+debug.enable('randombins:*')
 
 const alphabets = [ '0123', 'abcd', 'ABCD' ] // 4*4*4 = 64 combinations
 
 randombins(alphabets)
-.then(log) // the first combination from the given alphabets,
-// together with 7 other randomly selected combinations, in random order
-// e.g. [ "3bA", "1cA", "0bA", "0dD", "2aA", "3dC", "0aA", "2cA" ]
+.forEach(debug('randombins:')) // e.g. 0aA, 0aC, 1aA, 1cB, 2bA, 2bD, 3aA, 3dA
+.catch(debug('randombins:error:'))
 ```
 
-a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/randombins/v1.0.0/spec/example/index.html)
+a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/randombins/v2.0.0/spec/example/index.html)
 in the browser console,
 or by cloning this repository and running the following commands from a terminal:
 ```bash
@@ -31,19 +30,19 @@ npm run example
 ```
 the files of this example are available [here](./spec/example).
 
-# <a name="api"></a> API v1.0 stable
+# <a name="api"></a> API v2.0 stable
 `ES5` and [`Typescript`](http://www.typescriptlang.org/) compatible.
 coded in `Typescript 2`, transpiled to `ES5`.
 
 for a detailed specification of the API,
-run the [unit tests](https://cdn.rawgit.com/ZenyWay/randombins/v1.0.0/spec/web/index.html)
+run the [unit tests](https://cdn.rawgit.com/ZenyWay/randombins/v2.0.0/spec/web/index.html)
 in your browser.
 
 # <a name="contributing"></a> CONTRIBUTING
 see the [contribution guidelines](./CONTRIBUTING.md)
 
 # <a name="license"></a> LICENSE
-Copyright 2016 Stéphane M. Catala
+Copyright 2017 Stéphane M. Catala
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

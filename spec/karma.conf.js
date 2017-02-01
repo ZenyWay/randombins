@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Stephane M. Catala
+ * Copyright 2017 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  */
 ;
 var browsers = [
-//  'Firefox',
+  'Firefox',
   process.env.TRAVIS ? 'Chrome--no-sandbox' : 'Chrome'
 ]
 

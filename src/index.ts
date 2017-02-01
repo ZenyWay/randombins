@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Stephane M. Catala
+ * Copyright 2017 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,34 @@
 import randomSizeBins from './random-size-bins'
 import toCombination$ from 'ordered-char-combinations'
 import getRandomWords from 'randomwords'
-import getRandomShuffle from 'randomshuffle'
-import { Stream, from as toStream, throwError } from 'most'
+import { Stream, from as toStream, fromPromise, throwError } from 'most'
+
+export default function (opts?: Partial<RandomBinsFactorySpec>): RandomBins {
+  const spec = getRandomBinsSpec(opts)
+
+  return function (alphabets: string[]|Stream<string>): Stream<string> {
+    const combination$ = spec.toCombination$(alphabets)
+
+    return fromPromise(calculateCombinationsLength(alphabets))
+    .chain(length => randomSizeBins(spec.randomwords, combination$, length, spec.size))
+  }
+}
 
 export interface RandomBinsFactorySpec {
   size: number
   toCombination$: (alphabets: string[]|Stream<string>) => Stream<string>
   randomwords: (length: number) => Uint16Array
-  randomshuffle: <T>(arr: T[]) => T[]
 }
 
-export default function (opts?: Partial<RandomBinsFactorySpec>) {
-  const spec = getRandomBinsSpec(opts)
-
-  return function randombins (alphabets: string[]|Stream<string>): Promise<string[]> {
-    const combination$ = spec.toCombination$(alphabets)
-
-    return calculateCombinationsLength(alphabets)
-    .then(length => randomSizeBins(spec.randomwords, combination$, length, spec.size))
-    .then(spec.randomshuffle)
-  }
+export interface RandomBins {
+  (alphabets: string[]|Stream<string>): Stream<string>
 }
 
 function getRandomBinsSpec (opts?: Partial<RandomBinsFactorySpec>): RandomBinsFactorySpec {
  return {
     size: opts && opts.size || 256,
     toCombination$: opts && opts.toCombination$ || toCombination$,
-    randomwords: opts && opts.randomwords || getRandomWords(),
-    randomshuffle: opts && opts.randomshuffle || getRandomShuffle()
+    randomwords: opts && opts.randomwords || getRandomWords()
   }
 }
 

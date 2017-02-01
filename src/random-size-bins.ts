@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Stephane M. Catala
+ * Copyright 2017 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import { Stream, from as toStream, throwError } from 'most'
  * from combination$, systematically starting with the latter's first entry.
  */
 export default function (randomwords: (length: number) => Uint16Array,
-combination$: Stream<string>, length: number, size: number): Promise<string[]> {
+combination$: Stream<string>, length: number, size: number): Stream<string> {
   const first$ = combination$.take(1)
   const combinationsLength = length - 1 // exclude first (added separately)
   const randomsLength = size - 1 // exclude first (always 0)
 
   return !isValidBinSize(combinationsLength / randomsLength)
-  ? Promise.reject(new RangeError('bin size out-of-range'))
+  ? throwError(new RangeError('bin size out-of-range'))
   : toStream<number>(randomwords(randomsLength))
   .loop(({ combination$, index }, random) => {
     const next = index + combinationsLength
@@ -51,14 +51,8 @@ combination$: Stream<string>, length: number, size: number): Promise<string[]> {
   })
   .startWith(first$)
   .join()
-  .reduce<string[]>(push, [])
 }
 
 function isValidBinSize(size: number): boolean {
   return (size > 1) && (size < 32768) // within Shannon limit of random words range
-}
-
-function push <T>(arr: T[], val: T): T[] {
-  arr.push(val)
-  return arr
 }

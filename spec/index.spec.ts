@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Stephane M. Catala
+ * Copyright 2017 Stephane M. Catala
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,6 @@ const RANDOM_WORDS = new Uint16Array([ 0, 65541 / 7, 65538 / 3 ]) // ceil
 
 const RANDOM_SIZE_BINS = [ '0aA', '0aB', '1cB', '3aC' ]
 
-const SHUFFLED = [ '2bA', '0aA', '3cD', '1dD' ] // could be anything
-
 function isString (val:any): val is String|string {
   return typeof (val && val.valueOf()) === 'string'
 }
@@ -85,7 +83,7 @@ beforeEach (() => {
 })
 
 describe('getRandomBins (opts?: Partial<RandomBinsFactorySpec>): ' +
-'(alphabets: string[]|Stream<string>): Promise<string[]>', () => {
+'(alphabets: string[]|Stream<string>): Stream<string>', () => {
   describe('when called without argument', () => {
     beforeEach(() => {
       try {
@@ -103,12 +101,11 @@ describe('getRandomBins (opts?: Partial<RandomBinsFactorySpec>): ' +
   })
 })
 
-describe('randombins (alphabets: string[]|Stream<string>): Promise<string[]>',
+describe('randombins (alphabets: string[]|Stream<string>): Stream<string>',
 () => {
   let toCombination$: jasmine.Spy
   let randomwords: jasmine.Spy
-  let randomshuffle: jasmine.Spy
-  let randombins: (alphabets: string[]|most.Stream<string>) => Promise<string[]>
+  let randombins: (alphabets: any) => most.Stream<string>
 
   beforeEach(() => {
     toCombination$ = jasmine.createSpy('toCombination$')
@@ -118,28 +115,24 @@ describe('randombins (alphabets: string[]|Stream<string>): Promise<string[]>',
     randomwords = jasmine.createSpy('randomwords')
     .and.returnValue(RANDOM_WORDS)
 
-    randomshuffle = jasmine.createSpy('randomshuffle')
-    .and.returnValue(SHUFFLED)
-
     randombins = getRandomBins({
       size: 4,
       toCombination$: toCombination$,
-      randomwords: randomwords,
-      randomshuffle: randomshuffle
+      randomwords: randomwords
     })
   })
 
   describe('when given an Iterable or Stream of strings', () => {
     beforeEach((done) => {
-      most.from([ // TODO add an entry resulting in bins of 32767 elements
+      most.from([
         ALPHABETS,
         ALPHABETS_ITERABLE,
         ALPHABET$,
         ALPHABETS_32768_3
       ])
       .map(randombins)
-      .await()
-      .reduce<string[]>(push, []) // toArray
+      .concatMap(bins => most.fromPromise(bins.reduce(push, [])))
+      .reduce(push, [])
       .then(arr => result.value = arr)
       .catch(err => result.error = err)
       .then(() => setTimeout(done))
@@ -147,7 +140,9 @@ describe('randombins (alphabets: string[]|Stream<string>): Promise<string[]>',
 
     it('resolves to an Array<string> instance with shuffled, randomly selected ' +
     'combinations of characters from each alphabet in the given sequence', () => {
-      expect(result.value).toEqual([ SHUFFLED, SHUFFLED, SHUFFLED, SHUFFLED ])
+      expect(result.value).toEqual([
+        RANDOM_SIZE_BINS, RANDOM_SIZE_BINS, RANDOM_SIZE_BINS, [ 0, 1, 37449, 76459 ]
+      ])
       expect(result.error).toBeUndefined()
       expect(toCombination$.calls.allArgs()).toEqual([
         [ ALPHABETS ], [ ALPHABETS_ITERABLE ], [ ALPHABET$ ], [ ALPHABETS_32768_3 ]
@@ -155,16 +150,13 @@ describe('randombins (alphabets: string[]|Stream<string>): Promise<string[]>',
       expect(randomwords.calls.allArgs()).toEqual([
         [ 3 ], [ 3 ], [ 3 ], [ 3 ]
       ])
-      expect(randomshuffle.calls.allArgs()).toEqual([
-        [ RANDOM_SIZE_BINS ], [ RANDOM_SIZE_BINS ],
-        [ RANDOM_SIZE_BINS ], [ [ 0, 1, 37449, 76459 ] ]
-      ])
     })
   })
 
   describe('when not given any argument', () => {
     beforeEach((done) => {
       ;(<any>randombins)()
+      .reduce(push, [])
       .then((arr: any[]) => result.value = arr)
       .catch((err: any) => result.error = err)
       .then(() => setTimeout(done))
@@ -183,11 +175,10 @@ describe('randombins (alphabets: string[]|Stream<string>): Promise<string[]>',
         null, undefined, true, 42, /* 'foo', this is an Iterable<string> ! */
         () => {}, [ 42, 'foo' ], { foo: 'foo' }
       ])
-      .map(<any>randombins)
-      .map(most.fromPromise)
+      .map(randombins)
       .flatMap((val$: most.Stream<any>) => val$
         .recoverWith((err: any) => most.of(err)))
-      .reduce<any[]>(push, []) // toArray
+      .reduce(push, []) // toArray
       .then(arr => result.error = arr)
       .then(() => setTimeout(done))
     })
@@ -208,11 +199,10 @@ describe('randombins (alphabets: string[]|Stream<string>): Promise<string[]>',
         ALPHABETS_OUT_OF_RANGE_1_3,
         ALPHABETS_OUT_OF_RANGE_32768_3
       ])
-      .map(<any>randombins)
-      .map(most.fromPromise)
+      .map(randombins)
       .flatMap((val$: most.Stream<any>) => val$
         .recoverWith((err: any) => most.of(err)))
-      .reduce<any[]>(push, []) // toArray
+      .reduce(push, []) // toArray
       .then(arr => result.error = arr)
       .then(() => setTimeout(done))
     }, 20000) // extended timeout
